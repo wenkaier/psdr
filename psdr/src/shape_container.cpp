@@ -28,7 +28,6 @@ int Shape_Container::detect()
     copy_primitives_from_detector();
 	copy_support_planes_from_detector();
 	SD->clear_primitives();
-
 	discard_degenerate_primitives();
 
     if(SD->_should_discretize)
@@ -267,6 +266,13 @@ void Shape_Container::to_ply(const string & filename, const string &  type)
     vector<vector<Inexact_Point_3> > points;
     vector<CGAL::Color> colors;
 
+    SD->set_primitives();
+
+    copy_primitives_from_detector();
+    copy_support_planes_from_detector();
+    SD->clear_primitives();
+    discard_degenerate_primitives();
+
     size_t total_convex_hulls = size_of_inexact_convex_hulls();
     points.reserve(total_convex_hulls);
     colors.reserve(total_convex_hulls);
@@ -274,8 +280,11 @@ void Shape_Container::to_ply(const string & filename, const string &  type)
 //    map<int,CGAL::Color> class_colors;
 //    if(SD->point_classes.size()){
 //    }
+    cout << "output1" << endl;
 
     for (size_t p = 0; p < total_convex_hulls; ++p) {
+    // for (size_t p = 0; p < SD->planes_2.size(); ++p) {
+
         if (is_primitive_degenerate(p)) continue;
 
         const CGAL::Color & C = get_primitive_color(p);
@@ -292,14 +301,12 @@ void Shape_Container::to_ply(const string & filename, const string &  type)
                 }
             }
         }
-
         else if (type == "rectangle") {
             // Best rectangles
             const std::vector<Inexact_Point_3> & H = get_best_rectangle_points(p);
             points.push_back(H);
             colors.push_back(C);
         }
-
         else if (type == "convex") {
             // Convex hulls
             const std::vector<Inexact_Point_3> & H = get_convex_hull_points(p);

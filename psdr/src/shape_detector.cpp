@@ -459,7 +459,7 @@ bool Shape_Detector::load_npz()
     vector<int> vg_inliers_to_planes(pts.shape()[0], -1);
     vector<vector<int>> vg_planes_to_inliers;
     vector<Color> vg_planes_to_colors;
-    vector<vector<double>> vg_planes;
+    vector<Inexact_Plane> vg_planes;
     auto group_num_points = a["group_num_points"].cast<int32_t>();
     auto group_points = a["group_points"].cast<int32_t>();
     auto group_colors = a["group_colors"].cast<int32_t>();
@@ -467,6 +467,7 @@ bool Shape_Detector::load_npz()
     int id = 0;
     int current_point_id = 0;
     for(int i = 0; i < group_num_points.shape()[0]; i++){
+
 
         std::vector<int> this_plane;
         for(int j = 0; j < group_num_points[i]; j++){
@@ -478,15 +479,14 @@ bool Shape_Detector::load_npz()
         id+=group_num_points[i];
         auto color = Color(group_colors(i,0),group_colors(i,1),group_colors(i,2));
         vg_planes_to_colors.push_back(color);
-        vg_planes.push_back({group_parameters(i,0),group_parameters(i,1),group_parameters(i,2),group_parameters(i,3)});
+        Inexact_Plane P(group_parameters(i,0),group_parameters(i,1),group_parameters(i,2),group_parameters(i,3));
+        vg_planes.push_back(P);
     }
 
-    inliers_to_planes.clear();
     inliers_to_planes = vg_inliers_to_planes;
-    planes_to_inliers.clear();
     planes_to_inliers = vg_planes_to_inliers;
     planes_to_colors = vg_planes_to_colors;
-    planes = vg_planes;
+    planes_2 = vg_planes;
 
     return 0;
 

@@ -14,7 +14,7 @@ endif()
 ####################### EXTERNAL ######################
 #######################################################
 find_package(CGAL QUIET REQUIRED)
-include(${CGAL_USE_FILE})
+# include(${CGAL_USE_FILE})
 ### issues with eigen? Do this: https://stackoverflow.com/a/25537967
 
 
@@ -35,23 +35,22 @@ include_directories(../../psdr/include)
 ##############################
 ############ psdr ############
 ##############################
-add_executable(example
-    "example.cpp")
+add_executable(detect "detect.cpp")
+target_link_libraries(detect debug "/home/rsulzer/cpp/psdr/psdr/build/debug/libShapeDetection.a"
+optimized "/home/rsulzer/cpp/psdr/psdr/build/release/libShapeDetection.a")
+# target_link_libraries(detect "/home/rsulzer/cpp/psdr/psdr/build/release/libShapeDetection.a")
+target_link_libraries(detect ${Boost_LIBRARIES})
+target_link_libraries(detect ${CGAL_LIBRARIES})
+target_link_libraries(detect spdlog::spdlog)
+target_link_libraries(detect ZLIB::ZLIB xtensor xtensor-io)
 
-add_library(ShapeDetectionDebug STATIC IMPORTED) # or STATIC instead of SHARED
-set_target_properties(ShapeDetectionDebug PROPERTIES
-  IMPORTED_LOCATION "/home/rsulzer/cpp/psdr/psdr/build/debug/libShapeDetection.a"
-  INTERFACE_INCLUDE_DIRECTORIES "/home/rsulzer/cpp/psdr/psdr/include"
-)
-add_library(ShapeDetectionRelease STATIC IMPORTED) # or STATIC instead of SHARED
-set_target_properties(ShapeDetectionRelease PROPERTIES
-  IMPORTED_LOCATION "/home/rsulzer/cpp/psdr/psdr/build/release/libShapeDetection.a"
-  INTERFACE_INCLUDE_DIRECTORIES "/home/rsulzer/cpp/psdr/psdr/include"
-)
 
-target_link_libraries(example debug ShapeDetectionDebug optimized ShapeDetectionRelease)
-target_link_libraries(example ${Boost_LIBRARIES})
-target_link_libraries(example ${CGAL_LIBRARIES})
-target_link_libraries(example spdlog::spdlog)
-target_link_libraries(example ZLIB::ZLIB xtensor xtensor-io)
+add_executable(convert "convert.cpp")
+# target_link_libraries(example debug ShapeDetectionDebug optimized ShapeDetectionRelease)
+target_link_libraries(convert debug "/home/rsulzer/cpp/psdr/psdr/build/debug/libShapeDetection.a"
+optimized "/home/rsulzer/cpp/psdr/psdr/build/release/libShapeDetection.a")
+target_link_libraries(convert ${Boost_LIBRARIES})
+target_link_libraries(convert ${CGAL_LIBRARIES})
+target_link_libraries(convert spdlog::spdlog)
+target_link_libraries(convert ZLIB::ZLIB xtensor xtensor-io)
 

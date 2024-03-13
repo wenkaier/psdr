@@ -20,6 +20,9 @@ namespace po = boost::program_options;
 
 
 
+
+
+
 int main(int argc, char const *argv[]){
 
     auto logger = spdlog::stdout_color_mt("PSDR");
@@ -78,8 +81,8 @@ int main(int argc, char const *argv[]){
     SD.set_constraint(false);
     SD.set_weight_m(0);
     SD.set_metric_type(0);
-    SD.set_lambda_c(1.0);
-    SD.set_lambda_r(1.0);
+    SD.set_lambda_complexity(1.0);
+    SD.set_lambda_completeness(1.0);
     SD.set_lambda_regularity(1.0);
     SD.set_lambda_fidelity(1.0);
 
