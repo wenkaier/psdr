@@ -62,33 +62,29 @@ class Shape_Detector
 
 	struct Add_Comparator {
         bool operator()(pair<int, double> p1, pair<int, double> p2) {
-
 			return p1.second > p2.second;
 		}
 	};
+
 	struct Add_Comparator_normal {
         bool operator()(pair<int, double> p1, pair<int, double> p2) {
-
 			return p1.second < p2.second;
 		}
 	};
 
 	struct Remove_Comparator {
         bool operator()(pair<int, double> p1, pair<int, double> p2) {
-
 			return p1.second < p2.second;
 		}
 	};
 	struct Remove_Comparator_normal {
         bool operator()(pair<int, double> p1, pair<int, double> p2) {
-
 			return p1.second > p2.second;
 		}
 	};
 
 	struct Weight_Comparator_with_energy {
         bool operator()(pair<pair<int, vector<int>>, vector<double>> p1, pair<pair<int, vector<int>>, vector<double>> p2) {
-
 			return p1.second[0] > p2.second[0];
 		}
 	};
@@ -213,10 +209,8 @@ protected:
     void calculate_center();
 	void show_result(double t);
     pair<double, double> get_gauss_sphere_value(const Inexact_Vector_3 & v);
+
 public:
-
-//    void set_default_parameters();
-
 	void set_primitives();
 
 	void test_regularity_planes();
@@ -264,8 +258,6 @@ public:
     void to_vg(const string& filename);
 
     void to_npz(const string& filename);
-
-
 
 	Pwn_vector::const_iterator points_begin() const;
 
@@ -342,7 +334,6 @@ protected:
 	bool should_compute_knn;
 	double normal_threshold;
 
-//    bool _should_discretize = false;
 	double discretization_angle;
 	double discretization_distance;
 
@@ -350,8 +341,6 @@ protected:
 	double neighborhood_distance;
 	bool should_compute_neighborhood;
     vector<std::set<int> > neighbors;
-
-//    bool _should_regularize = false;
 	double lambda;
 	double tolerance_angle;
 	double tolerance_coplanarity;
@@ -400,11 +389,8 @@ public:
     vector<CGAL::Color> convex_hulls_colors;
     vector<pair<int, int> > convex_hulls_seeds;
 
-
 	bool if_stop;
-
 	bool if_constraint;
-
 
     double lambda_complexity;
 	double lambda_regular;

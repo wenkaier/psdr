@@ -2,10 +2,17 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/ndarray.h>
-
+#include <nanobind/stl/vector.h>
 
 #include "shape_container.h"
 #include "shape_detector.h"
+
+#include <CGAL/estimate_scale.h>
+#include <CGAL/jet_estimate_normals.h>
+#include <CGAL/tags.h>
+#include <CGAL/mst_orient_normals.h>
+
+
 
 using namespace std;
 namespace nb = nanobind;
@@ -142,34 +149,142 @@ int pyPSDR::load_points(const array3& points, const array3& normals){
 
 }
 
+vector<vector<double>> pyPSDR::estimate_normals(const array3& points, int knn){
 
-int pyPSDR::load_points(const array3& points){
+    // vector<vector<double>> normals(points.shape(0), vector<double>(3));
+    vector<vector<double>> normals(points.shape(0), vector<double>(3));
+    if(points.shape(0) == 0){
+        _SD._logger->error("Empty points array!");
+        return normals;
+    }
 
-    // TODO: load points without normals and estimate them
+    _SD._logger->debug("Loaded {} points",points.shape(0));
+
+
+    Pwn_vector pwn;
+    vector<Inexact_Point_3> pts;
+    for(size_t i = 0; i < points.shape(0); i++){
+        Point_with_normal p;
+        p.first = Inexact_Point_3(points(i,0),points(i,1),points(i,2));
+        pwn.push_back(p);
+        pts.push_back(p.first);
+    }
+
+    if(knn == 0){
+        _SD._logger->debug("Estimate global k neighbor scale");
+        knn = CGAL::estimate_global_k_neighbor_scale(pts);
+    }
+    pts.clear();
+
+    _SD._logger->debug("Estimate normals using jets");
+    CGAL::jet_estimate_normals<CGAL::Parallel_if_available_tag>
+        (pwn,
+         knn, // when using a neighborhood radius, K=0 means no limit on the number of neighbors returns
+         CGAL::parameters::point_map(Point_map())
+             .normal_map(Normal_map()));
+
+
+    // Orients normals.
+    // Note: mst_orient_normals() requires a range of points
+    // as well as property maps to access each point's position and normal.
+    auto unoriented_points_begin =
+        CGAL::mst_orient_normals(pwn, knn,
+                                 CGAL::parameters::point_map(Point_map())
+                                     .normal_map(Normal_map()));
+    // Optional: delete points with an unoriented normal
+    // if you plan to call a reconstruction algorithm that expects oriented normals.
+    // pwn.erase(unoriented_points_begin, pwn.end());
+
+    int i = 0;
+    for(auto pn : pwn){
+        normals[i][0] = pn.second.x();
+        normals[i][1] = pn.second.y();
+        normals[i][2] = pn.second.z();
+        i++;
+    }
+
+    return normals;
+
+}
+
+int pyPSDR::load_points(const array3& points, int knn){
 
     _SD.points.clear();
-    _SD._logger->error("Not implemented error.");
+    _SD.points_if_added.clear();
+    _SD.planes.clear();
+    _SD.planes_0.clear();
+    _SD.planes_1.clear();
+    _SD.planes_2.clear();
 
-//    _logger->warn("input .ply file does not contain valid 'normals'. 'normals' will be estimated.");
+    _SD._logger->warn("input .ply file does not contain valid 'normals'. 'normals' will be estimated.");
 
-//    _logger->debug("estimate global k neighbor scale");
-//    // first estimate k for knn
-//    vector<Inexact_Point_3> tpoints;
-//    for(const auto pnv : points)
-//        tpoints.push_back(pnv.first);
-//    knn = CGAL::estimate_global_k_neighbor_scale(tpoints);
-//    should_compute_knn = false;
 
-//    _logger->debug("estimate normals using jets");
+    // this is later used to determine if planes should be detected or simply read from existing file, here we want them to be detected
+    _SD.path_point_cloud_extension = ".ply";
 
-//    CGAL::jet_estimate_normals<Concurrency_tag>
-//        (points,
-//            knn, // when using a neighborhood radius, K=0 means no limit on the number of neighbors returns
-//            CGAL::parameters::point_map(Point_map())
-//            .normal_map(Normal_map()));
-//    if_oriented_normal = false;
+    if(points.shape(0) == 0){
+        _SD._logger->error("Empty points array!");
+        return 1;
+    }
+
+    vector<Inexact_Point_3> pts;
+    for(size_t i = 0; i < points.shape(0); i++){
+        Point_with_normal pwn;
+        pwn.first = Inexact_Point_3(points(i,0),points(i,1),points(i,2));
+        pts.push_back(pwn.first);
+        _SD.points.push_back(pwn);
+    }
+
+    if(knn == 0){
+        _SD._logger->debug("Estimate global k neighbor scale");
+        knn = CGAL::estimate_global_k_neighbor_scale(pts);
+    }
+    pts.clear();
+
+    _SD._logger->debug("Estimate normals using jets");
+    CGAL::jet_estimate_normals<CGAL::Parallel_if_available_tag>
+        (_SD.points,
+         knn, // when using a neighborhood radius, K=0 means no limit on the number of neighbors returns
+         CGAL::parameters::point_map(Point_map())
+             .normal_map(Normal_map()));
+
+
+    _SD._logger->debug("Loaded {} points",points.shape(0));
+    _SD.if_oriented_normal = true;
+    _SD.inliers_to_natural_colors = std::vector<CGAL::Color>(points.size(), CGAL::black());
+    _SD.spacing_is_known = false;
+    _SD.set_extrema();
 
     return 0;
+
+}
+
+
+vector<vector<double>> pyPSDR::get_points_and_normals(){
+
+    vector<vector<double>> pns;
+    vector<double> pn;
+    Inexact_Point_3 pt;
+    Inexact_Vector_3 normal;
+    for(Point_with_normal this_pn : _SD.points){
+
+        pn.clear();
+
+        pt = this_pn.first;
+        pn.push_back(pt.x());
+        pn.push_back(pt.y());
+        pn.push_back(pt.z());
+
+        normal = this_pn.second;
+        pn.push_back(normal.x());
+        pn.push_back(normal.y());
+        pn.push_back(normal.z());
+
+        pns.push_back(pn);
+
+    }
+
+    return pns;
 
 }
 
@@ -222,7 +337,6 @@ int pyPSDR::refine(int max_iterations = -1, int max_seconds = -1,
     //if constraint is set, the mean distance should be smaller than the original one (the configuration of region growing).
     _SD.set_constraint(false);
 
-
     _SD.set_weight_m(0);
 
     // 0 = hybrid, 1 = L1.1 (normal variation), 2 = L2 (point dist)
@@ -244,12 +358,14 @@ int pyPSDR::save(const string filename, const string type = "convex"){
 NB_MODULE(pypsdr_ext, m){
     nb::class_<pyPSDR>(m, "psdr")
             .def(nb::init<int>(),"verbosity"_a = 0)
+            .def("estimate_normals", nb::overload_cast<const array3&, int>(&pyPSDR::estimate_normals), "points"_a , "knn_"_a = 0,"Load points from a numpy array and return normals estimated with neighborhood k.")
             .def("load_points", nb::overload_cast<const string>(&pyPSDR::load_points), "file"_a ,"Load a point cloud with normals or a point group file.")
             .def("load_points", nb::overload_cast<const array3&, const array3&, const array1&>(&pyPSDR::load_points), "points"_a, "normals"_a, "classes"_a, "Load points and normals from numpy arrays.")
             .def("load_points", nb::overload_cast<const array3&, const array3&>(&pyPSDR::load_points), "points"_a, "normals"_a, "Load points and normals from numpy arrays.")
-            .def("load_points", nb::overload_cast<const array3&>(&pyPSDR::load_points), "points"_a ,"Load points from a numpy array.")
+        .def("load_points", nb::overload_cast<const array3&, int>(&pyPSDR::load_points), "points"_a , "knn_"_a = 0,"Load points from a numpy array and estimate normals with neighborhood k.")
+        .def("get_points_and_normals",&pyPSDR::get_points_and_normals,"Get points from e.g. a .vg file.")
             .def("get_bounding_box_diagonal", &pyPSDR::get_bounding_box_diagonal, "Get the points bounding box diagonal.")
-            .def("detect", &pyPSDR::detect, "min_inliers"_a = 25, "epsilon"_a = 0.2, "normal_th"_a = 0.85, "knn"_a = 10,"Detect planar shapes.")
+            .def("detect", &pyPSDR::detect, "min_inliers"_a = 50, "epsilon"_a = 0.08, "normal_th"_a = 0.85, "knn"_a = 10,"Detect planar shapes.")
             .def("refine", &pyPSDR::refine,
                  "max_iterations"_a = -1, "max_seconds"_a = -1,
                  "complexity"_a = 1.0, "completeness"_a = 1.0, "regularity"_a = 1.0, "fidelity"_a = 1.0,

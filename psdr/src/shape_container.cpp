@@ -280,7 +280,6 @@ void Shape_Container::to_ply(const string & filename, const string &  type)
 //    map<int,CGAL::Color> class_colors;
 //    if(SD->point_classes.size()){
 //    }
-    cout << "output1" << endl;
 
     for (size_t p = 0; p < total_convex_hulls; ++p) {
     // for (size_t p = 0; p < SD->planes_2.size(); ++p) {

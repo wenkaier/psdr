@@ -1,12 +1,12 @@
 import os
 from pypsdr import psdr
-from compod import all
 
 ps = psdr(verbosity=1)
 
 model = "bunny"
 
 file = "../data/{}/convexes_detected/file.vg".format(model)
+
 os.makedirs(os.path.dirname(file),exist_ok=True)
 
 ps.load_points(file)

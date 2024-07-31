@@ -31,7 +31,12 @@ public:
     int load_points(const string filename);
     int load_points(const array3& points, const array3& normals, const array1& classes);
     int load_points(const array3& points, const array3& normals);
-    int load_points(const array3& points);
+    int load_points(const array3& points, int knn);
+    vector<vector<double>> get_points_and_normals();
+
+
+    vector<vector<double>> estimate_normals(const array3& points, int knn);
+
     double get_bounding_box_diagonal();
 
     int detect(int rg_min_points, double rg_epsilon, double rg_normal_threshold, int knn);

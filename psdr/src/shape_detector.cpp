@@ -5,7 +5,6 @@
 #include <CGAL/compute_average_spacing.h>
 #include <CGAL/estimate_scale.h>
 #include <CGAL/jet_estimate_normals.h>
-//#include <CGAL/Shape_regularization/regularize_planes.h>
 #include <CGAL/Classification/property_maps.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
@@ -74,7 +73,6 @@ Shape_Detector::Shape_Detector()
 
     mean_error = 0;
     mean_normal_diviation = 0;
-
     mean_distance_diaviation = 0;
 
     number_of_insert_exclude = 10;
@@ -725,9 +723,9 @@ void Shape_Detector::detect_shapes()
         discretize_planes();
     else
         planes_2 = planes_0;
+
 	//initialized the degree of planes' freedom.
 	initial_regular_groups_done();
-
 	get_coverage_and_mean_error();
 	ori_all_error = all_error;
 	ori_coverage = coverage;
@@ -776,7 +774,6 @@ void Shape_Detector::detect_shapes()
 void Shape_Detector::refine_shapes(int max_iter, int max_seconds) {
 
     if (should_compute_knn) compute_average_spacing_and_k_nearest_neighbors();
-
 
     set_max_iter(max_iter);
     set_max_seconds(max_seconds);
@@ -1923,25 +1920,22 @@ void Shape_Detector::update_regular_relations_after_add_remove(int one_change_pl
 }
 
 
-int Shape_Detector::get_the_recent_degrees_of_freedom() {
+int Shape_Detector::get_the_recent_degrees_of_freedom(){
+
 	int dof = 0;
 	for (int i = 0; i < planes_to_coplanar_done.size(); ++i) {
 		//if this plane is not regularized, its dof is 3.
 		if (planes_to_coplanar_done[i] == -1 && planes_to_orthogonal_done[i] == -1 && planes_to_parallel_done[i] == -1) {
 			dof += 3;
-
 		}
 		//if the plane is only paralleled(no coplanar), its sign distance dof is 1.
 		else if (planes_to_coplanar_done[i] == -1 && planes_to_orthogonal_done[i] == -1 && planes_to_parallel_done[i] != -1) {
 			dof += 1;
-
 		}
 		//if the plane is orthogonaled(no coplanar), its sign distance dof is 1.
 		else if (planes_to_coplanar_done[i] == -1 && planes_to_orthogonal_done[i] != -1 && planes_to_parallel_done[i] == -1) {
 			dof += 1;
-
 		}
-
 	}
 	//add the orientation dof of orthogonal groups(including coplanar cases).
 	dof += 3 * orthogonal_done_to_planes.size();
@@ -1954,7 +1948,7 @@ int Shape_Detector::get_the_recent_degrees_of_freedom() {
 }
 
 //initialize the vectors that record the conducted regularity operations (regularized primitives).
-void Shape_Detector::initial_regular_groups_done() {
+void Shape_Detector::initial_regular_groups_done(){
 	planes_if_regularized = std::vector<bool>(planes_2.size(), false);
 	planes_to_parallel_done = std::vector<int>(planes_2.size(), -1);
 	planes_to_orthogonal_done = std::vector<int>(planes_2.size(), -1);
@@ -1962,8 +1956,6 @@ void Shape_Detector::initial_regular_groups_done() {
 	parallel_done_to_planes.clear();
 	orthogonal_done_to_planes.clear();
 	coplanar_done_to_planes.clear();
-
-
 }
 
 
@@ -1976,37 +1968,31 @@ void Shape_Detector::initial_regular_groups_done() {
 //************Functions for calculating the energy changing for 'any' operation.
 
 //energy changing for regularity operation (L2).
-double Shape_Detector::energy_changed_regularization_euclidean_distance(double dis, double changed_freedom) {
+double Shape_Detector::energy_changed_regularization_euclidean_distance(double dis, double changed_freedom){
 
 	double maxixum_freedom = 3.0* double(points.size()) / double(min_points);
 
-	if (weight_mode == 2) {
-
+	if(weight_mode == 2){
 
 		double term_distance = double(lambda_fidelity)*(dis / double(number_of_assigned_points)) / (mean_distance_current);
 		double term_freedom = lambda_regular * changed_freedom / (double(freedom_of_planes_current));
 
-
 		return(term_distance + term_freedom);
 	}
-	else if (weight_mode == 1) {
+	else if (weight_mode == 1){
 		double term_distance = double(lambda_fidelity)*(dis / double(number_of_assigned_points)) / (ori_mean_error);
 		double term_freedom = lambda_regular * changed_freedom / (double(ori_freedom_of_planes));
 
 		return(term_distance + term_freedom);
 
 	}
-	else {
+	else{
 		double term_distance = double(lambda_fidelity)*(dis / double(number_of_assigned_points)) / (epsilon);
 
 		double term_freedom = lambda_regular * changed_freedom / (double(maxixum_freedom));
 
 		return(term_distance + term_freedom);
-
-
 	}
-
-
 }
 
 double Shape_Detector::energy_changed_regularization_normal_deviation(double dis, double changed_freedom) {
@@ -2027,7 +2013,6 @@ double Shape_Detector::energy_changed_regularization_normal_deviation(double dis
 	else if (weight_mode == 1) {
 		double term_distance = -double(lambda_fidelity)*(dis / double(number_of_assigned_points)) / (ori_mean_error);
 
-
 		double term_freedom = lambda_regular * changed_freedom / (double(ori_freedom_of_planes));
 
 		return(term_distance + term_freedom);
@@ -2040,7 +2025,6 @@ double Shape_Detector::energy_changed_regularization_normal_deviation(double dis
 
 		return(term_distance + term_freedom);
 
-
 	}
 
 
@@ -2051,11 +2035,9 @@ double Shape_Detector::energy_changed_second_normal(double dis, double numb, int
 	if (weight_mode == 2) {
 		double change_fedilite = -double(lambda_fidelity)*((all_normal_diaviation + dis) / (double(number_of_assigned_points) - numb) - mean_normal_current) / (mean_normal_current);
 
-
         double change_completness = double(lambda_completeness)*numb / (double(number_inlier_before_opers));
 		
 		double change_freedom = double(lambda_regular)*change_dof / (double(freedom_of_planes_current));
-
 
 		return (change_fedilite + change_completness + change_freedom);
 	}
@@ -7502,13 +7484,8 @@ bool Shape_Detector::update_good_points_normal(int id_shape, std::pair<std::pair
 
 bool Shape_Detector::update_bad_points_normal(int id_shape, std::pair<std::pair<int, std::vector<int>>, std::vector<double>>& one_element) {
 
-
-
 	std::vector<std::pair<int, double>> ids_bad_inliers;
 	double bigest_normal = mean_normal_diviation;
-	//double bigest_normal = 0.01;
-
-
 
 	const Inexact_Plane & H = planes_2[id_shape];
 
@@ -7522,10 +7499,6 @@ bool Shape_Detector::update_bad_points_normal(int id_shape, std::pair<std::pair<
 		}
 
 	}
-
-
-
-
 
 	std::priority_queue<std::pair<int, double>, std::vector<std::pair<int, double>>, Remove_Comparator_normal> p_q;
 	for (std::pair<int, double> ppp : ids_bad_inliers) {
@@ -7564,8 +7537,6 @@ bool Shape_Detector::update_bad_points_normal(int id_shape, std::pair<std::pair<
 }
 
 bool Shape_Detector::test_if_connected(int i, int j) {
-
-
 
 	int Nb_neigh = 10;
 	for (int f = 0; f < planes_to_inliers[i].size(); ++f) {
@@ -7633,39 +7604,16 @@ void Shape_Detector::get_distance_diviation_show_merge_info(double t) {
 	freedom_of_planes_current = freedom_of_planes;
 	double new_coverage = double(number_of_assigned_points) / double(points.size());
 
-//    _logger->debug("Local operators: {} times" ,t);
-//    _logger->debug("Merge operators: {} times",t_merge);
-//    _logger->debug("Split operators: {} times" , t_split );
-//    _logger->debug("Insert operators: {} times",t_insert );
-//    _logger->debug("Exclude operators: {} times",t_exlude );
-//    _logger->debug("Regularity operators: {} times", t_regularization);
-
-//    _logger->debug("Primitives : {}" ,size_current_primitives);
-
-//    _logger->debug("Coverage  : {}" , new_coverage);
-//    _logger->debug("Mean error : {}" , (mean_distance_diaviation) );
-//    _logger->debug("Mean normal deviation : {}" , (mean_normal_diviation) );
-//    _logger->debug("Degree of freedom : {}" , (freedom_of_planes));
-
-//    _logger->debug("Primitives reducing : {}" , (old_size_current_primitives - size_current_primitives));
-
-//    _logger->debug("Coverage adding   : {}" , new_coverage - old_coverage );
-//    _logger->debug("Mean error reducing : {}" , (old_mean_distance_diaviation - mean_distance_diaviation) );
-//    _logger->debug("Mean normal deviation adding : {}" , (mean_normal_diviation - old_mean_normal_diaviation) );
-//    _logger->debug("Degree of freedom changing : {}", (freedom_of_planes-old_freedom_of_planes));
-
 	old_size_current_primitives = size_current_primitives;
 	old_mean_distance_diaviation = mean_distance_diaviation;
 	old_coverage = new_coverage;
 	old_mean_normal_diaviation = mean_normal_diviation;
 	old_freedom_of_planes = freedom_of_planes;
 
-
 }
 
 
 void Shape_Detector::get_distance_diviation_show_normal_info(double t) {
-
 
 	number_of_assigned_points = 0;
 	mean_distance_diaviation = 0;
@@ -7675,9 +7623,6 @@ void Shape_Detector::get_distance_diviation_show_normal_info(double t) {
 	mean_normal_diviation = 0;
 	freedom_of_planes = 0;
 	freedom_of_planes_current = 0;
-
-
-
 
 	for (size_t i = 0; i < planes_to_inliers.size(); ++i) {
 		number_of_assigned_points += planes_to_inliers[i].size();
@@ -7707,20 +7652,6 @@ void Shape_Detector::get_distance_diviation_show_normal_info(double t) {
 	freedom_of_planes_current = freedom_of_planes;
 
 	double new_coverage = double(number_of_assigned_points) / double(points.size());
-
-//    _logger->debug("Transfer operator: {} s." , t );
-//    _logger->debug("Primitives : {}" , (size_current_primitives));
-
-//    _logger->debug("Coverage  : {}" , (new_coverage) );
-//    _logger->debug("Mean error : {}" , (mean_distance_diaviation) );
-//    _logger->debug("Mean normal deviation : {}" , (mean_normal_diviation));
-//    _logger->debug("Degree of freedom : {}" , (freedom_of_planes));
-//    _logger->debug("Primitives reducing : {}" , (old_size_current_primitives - size_current_primitives));
-
-//    _logger->debug("Coverage adding   : {}" , new_coverage - old_coverage );
-//    _logger->debug("Mean error reducing : {}" ,(old_mean_distance_diaviation - mean_distance_diaviation));
-//    _logger->debug("Mean normal deviation adding : {}" , (mean_normal_diviation - old_mean_normal_diaviation) );
-//    _logger->debug("Degree of freedom changing : {}" , (freedom_of_planes - old_freedom_of_planes));
 
 	old_size_current_primitives = size_current_primitives;
 	old_mean_distance_diaviation = mean_distance_diaviation;
@@ -7761,18 +7692,16 @@ void Shape_Detector::get_coverage_and_mean_error_pure()
 void Shape_Detector::do_region_growing()
 {
 	int class_index = -1;
-//	int ten_percent_of_points = points.size() / 10;
 
     _logger->debug("Region growing...");
 
 	for (size_t i = 0; i < points.size(); i++) {
-//		if (i % ten_percent_of_points == 0) std::cout << ". " << std::flush;
 
 		if (inliers_to_planes[i] == -1) {
 
 			// Updates the index of primitive
 			inliers_to_planes[i] = ++class_index;
-			int conti = 0; 	//for accelerate least_square fitting 
+			int conti = 0; 	//for accelerate least_square fitting
 
 			// Characteristics of the seed
 			Inexact_Point_3 pt_seed = points[i].first;
@@ -7965,7 +7894,6 @@ void Shape_Detector::detect_planes()
 
     for(size_t i = 0; i < planes_to_inliers.size(); ++i){
 
-		//Inexact_Point_3 centroid = CGAL::ORIGIN;
 		double xc = 0, yc = 0, zc = 0;
 
 		std::vector<Inexact_Point_3> inliers_i;
@@ -7997,8 +7925,6 @@ void Shape_Detector::detect_planes()
 
 		planes_centroids.push_back(centroid);
 	}
-
-	// export_region_growing_results();
 
 	clock_t t_detect_end = clock();
     _logger->debug("Plane detection : done in {} s.",(double(t_detect_end - t_detect_start) / CLOCKS_PER_SEC));
@@ -8319,7 +8245,7 @@ void Shape_Detector::set_primitives()
 
 		std::vector<Inexact_Point_3> ch3d;
 		ch3d.reserve(ch2d.size());
-		for (size_t j = 0; j < ch2d.size(); ++j) {
+		for (size_t j = 0; j < ch2d.size(); ++j){
 			ch3d.push_back(H.to_3d(ch2d[j]));
 		}
 
@@ -9544,7 +9470,6 @@ int Shape_Detector::get_changed_degrees_of_freedom_after_a_regular_operation(int
 	after_dof += coplanar_done_to_planes_after.size();
 
 	return after_dof - before_dof;
-
 
 }
 
