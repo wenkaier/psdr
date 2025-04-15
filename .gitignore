@@ -11,3 +11,6 @@ psdr/__pycache__
 example/python/__pycache__
 __pycache__/*
 psdr/src/pypsdr/__pycache__
+
+
+.vscode/

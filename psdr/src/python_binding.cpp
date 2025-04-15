@@ -81,31 +81,7 @@ int pyPSDR::load_points(const array3& points, const array3& normals, const array
 
 double pyPSDR::get_bounding_box_diagonal(){
 
-
-    double xmin, xmax = _SD.points[0].first.x();
-    double ymin, ymax = _SD.points[0].first.y();
-    double zmin, zmax = _SD.points[0].first.z();
-
-    for(auto p : _SD.points){
-        // min
-        if(p.first.x() < xmin)
-            xmin = p.first.x();
-        if(p.first.y() < ymin)
-            ymin = p.first.y();
-        if(p.first.z() < zmin)
-            zmin = p.first.z();
-        // max
-        if(p.first.x() > xmax)
-            xmax = p.first.x();
-        if(p.first.y() > ymax)
-            ymax = p.first.y();
-        if(p.first.z() > zmax)
-            zmax = p.first.z();
-    }
-
-    bounding_box_diagonal = sqrt(pow(xmin-xmax,2)+pow(ymin-ymax,2)+pow(zmin-zmax,2));
-
-    return bounding_box_diagonal;
+    return _SD.get_bbox_diagonal();
 }
 
 int pyPSDR::load_points(const array3& points, const array3& normals){
